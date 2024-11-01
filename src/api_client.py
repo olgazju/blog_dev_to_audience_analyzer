@@ -156,3 +156,92 @@ def load_extended_followers_to_dataframe():
         extended_data.append(follower_info)
 
     return pd.DataFrame(extended_data)
+
+
+@backoff.on_exception(backoff.expo, requests.exceptions.RequestException, max_tries=5)
+def get_user_articles_summary(username):
+    """
+    Fetches a summary of articles for a given user, including article count, titles, and unique tags.
+
+    Parameters:
+        username (str): The Dev.to username of the user.
+
+    Returns:
+        dict: A dictionary with keys 'article_count', 'article_titles', and 'unique_tags'.
+    """
+    url = f"{BASE_URL}/articles?username={username}"
+    headers = {"api-key": API_KEY, "Accept": "application/vnd.forem.api-v1+json"}
+
+    article_titles = []
+    unique_tags = set()  # Use a set to ensure tags are unique
+    page = 1
+
+    while True:
+        response = requests.get(f"{url}&page={page}", headers=headers)
+
+        if response.status_code == 200:
+            articles = response.json()
+            if not articles:
+                break
+
+            # Process each article
+            for article in articles:
+                print(article)
+                article_titles.append(article.get("title"))
+                unique_tags.update(article.get("tag_list", []))
+            page += 1
+        elif response.status_code == 429:
+            print(f"Rate limit reached for {username}. Retrying after 1 second...")
+            time.sleep(1)
+        else:
+            print(
+                f"Failed to load articles for {username}: {response.status_code} - {response.text}"
+            )
+            return {"article_count": 0, "article_titles": [], "unique_tags": []}
+
+    return {
+        "article_count": len(article_titles),
+        "article_titles": article_titles,
+        "unique_tags": list(unique_tags),
+    }
+
+
+def update_followers_with_articles(followers_df):
+    """
+    Updates the followers DataFrame with article information for each follower.
+
+    This function adds three new columns to the DataFrame:
+    - 'article_count': Total number of articles published by the user.
+    - 'article_titles': List of article titles published by the user.
+    - 'unique_tags': List of distinct tags used across all articles.
+
+    Parameters:
+        followers_df (pd.DataFrame): The followers DataFrame.
+
+    Returns:
+        pd.DataFrame: Updated DataFrame with article information.
+    """
+    # Initialize lists to store article information
+    article_counts = []
+    article_titles = []
+    unique_tags = []
+
+    # Loop through each follower and fetch their article summary
+    for username in followers_df["username"]:
+        article_summary = get_user_articles_summary(username)
+
+        # Append the information to the lists
+        article_counts.append(article_summary["article_count"])
+        article_titles.append(article_summary["article_titles"])
+        unique_tags.append(article_summary["unique_tags"])
+
+        print(
+            f"For {username} found {article_summary["article_count"]} articles {article_summary["article_titles"]}  with {article_summary["unique_tags"]} tags"
+        )
+
+    # Add the new columns to the DataFrame
+    followers_df["article_count"] = article_counts
+    followers_df["article_titles"] = article_titles
+    followers_df["unique_tags"] = unique_tags
+
+    return followers_df
