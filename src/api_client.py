@@ -4,6 +4,8 @@ import pandas as pd
 import backoff
 from time import time
 from dotenv import load_dotenv
+from bs4 import BeautifulSoup
+import re
 
 # Load environment variables from .env file
 load_dotenv()
@@ -45,7 +47,11 @@ def load_articles_to_dataframe():
 
         # Append article data
         articles.extend(
-            {"title": article["title"], "created_at": article["published_at"]}
+            {
+                "title": article["title"],
+                "created_at": article["published_at"],
+                "public_reactions_count": article["public_reactions_count"],
+            }
             for article in data
         )
         page += 1
@@ -243,5 +249,88 @@ def update_followers_with_articles(followers_df):
     followers_df["article_count"] = article_counts
     followers_df["article_titles"] = article_titles
     followers_df["unique_tags"] = unique_tags
+
+    return followers_df
+
+
+@backoff.on_exception(backoff.expo, requests.exceptions.RequestException, max_tries=5)
+def get_user_stats(username):
+    """
+    Fetches a user's badges, comments count, and tags followed count from DEV.to.
+
+    Args:
+        username (str): The DEV.to username.
+
+    Returns:
+        tuple: A tuple containing lists of badge titles and descriptions, comment count, and tags count.
+    """
+    url = f"https://dev.to/{username}/"
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()  # Raise HTTPError for bad responses
+
+    if response is None:
+        return [], [], 0, 0  # Return default empty values if request fails
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    # Extract badges and descriptions
+    badges = []
+    badge_descriptions = []
+    badge_elements = soup.find_all("div", class_="badge_text_content")
+
+    for badge in badge_elements:
+        badge_title = badge.find("h4", class_="title fw-800 fs-l").text.strip()
+        badge_description = badge.find("p", class_="description").text.strip()
+        badges.append(badge_title)
+        badge_descriptions.append(badge_description)
+
+    # Extract comments written count
+    comment_count = 0
+    for div in soup.find_all("div", class_="flex items-center mb-4"):
+        if "comments written" in div.get_text(strip=True):
+            comment_count = int(re.search(r"\d+", div.get_text(strip=True)).group())
+
+    # Extract tags followed count
+    tags_count = 0
+    for div in soup.find_all("div", class_="flex items-center"):
+        text = div.get_text(strip=True)
+        if "tags followed" in text:
+            tags_count = int(re.search(r"\d+", text).group())
+
+    return badges, badge_descriptions, comment_count, tags_count
+
+
+def update_followers_with_stats(followers_df):
+    """
+    Updates the extended followers DataFrame with additional columns for badges, badge descriptions,
+    comments count, and tags followed count by fetching each follower's DEV.to profile.
+
+    Args:
+        followers_df (pd.DataFrame): The DataFrame containing follower usernames.
+
+    Returns:
+        pd.DataFrame: The updated DataFrame with new columns for badges, badge descriptions,
+                      comments count, and tags followed count.
+    """
+    badges_list = []
+    badge_descriptions_list = []
+    comments_count_list = []
+    tags_count_list = []
+
+    for username in followers_df["username"]:
+        badges, badge_descriptions, comments_count, tags_count = get_user_stats(
+            username
+        )
+        print(username, badges, badge_descriptions, comments_count, tags_count)
+        badges_list.append(badges)
+        badge_descriptions_list.append(badge_descriptions)
+        comments_count_list.append(comments_count)
+        tags_count_list.append(tags_count)
+
+    # Add new columns to the DataFrame
+    followers_df["badges"] = badges_list
+    followers_df["badge_descriptions"] = badge_descriptions_list
+    followers_df["comments_count"] = comments_count_list
+    followers_df["tags_count"] = tags_count_list
 
     return followers_df
