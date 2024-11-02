@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 import re
 
 # Load environment variables from .env file
-load_dotenv()
+load_dotenv(override=True)
 API_KEY = os.getenv("DEV_KEY")
 BASE_URL = "https://dev.to/api"
 
