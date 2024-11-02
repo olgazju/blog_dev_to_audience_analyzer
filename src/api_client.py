@@ -179,7 +179,10 @@ def get_user_articles_summary(username):
     headers = {"api-key": API_KEY, "Accept": "application/vnd.forem.api-v1+json"}
 
     article_titles = []
+    article_reading_time_minutes = []
     unique_tags = set()  # Use a set to ensure tags are unique
+    article_comments_counts = []
+    article_positive_reactions_counts = []
     page = 1
 
     while True:
@@ -195,6 +198,11 @@ def get_user_articles_summary(username):
                 print(article)
                 article_titles.append(article.get("title"))
                 unique_tags.update(article.get("tag_list", []))
+                article_reading_time_minutes.append(article.get("reading_time_minutes"))
+                article_comments_counts.append(article.get("comments_count"))
+                article_positive_reactions_counts.append(
+                    article.get("positive_reactions_count")
+                )
             page += 1
         elif response.status_code == 429:
             print(f"Rate limit reached for {username}. Retrying after 1 second...")
@@ -209,6 +217,9 @@ def get_user_articles_summary(username):
         "article_count": len(article_titles),
         "article_titles": article_titles,
         "unique_tags": list(unique_tags),
+        "article_reading_time_minutes": article_reading_time_minutes,
+        "article_comments_counts": article_comments_counts,
+        "article_positive_reactions_counts": article_positive_reactions_counts,
     }
 
 
@@ -231,6 +242,9 @@ def update_followers_with_articles(followers_df):
     article_counts = []
     article_titles = []
     unique_tags = []
+    article_reading_time_minutes = []
+    article_comments_counts = []
+    article_positive_reactions_counts = []
 
     # Loop through each follower and fetch their article summary
     for username in followers_df["username"]:
@@ -240,15 +254,27 @@ def update_followers_with_articles(followers_df):
         article_counts.append(article_summary["article_count"])
         article_titles.append(article_summary["article_titles"])
         unique_tags.append(article_summary["unique_tags"])
+        article_reading_time_minutes.append(
+            article_summary["article_reading_time_minutes"]
+        )
+        article_comments_counts.append(article_summary["article_comments_counts"])
+        article_positive_reactions_counts.append(
+            article_summary["article_positive_reactions_counts"]
+        )
 
         print(
-            f"For {username} found {article_summary["article_count"]} articles {article_summary["article_titles"]}  with {article_summary["unique_tags"]} tags"
+            f"For {username} found {article_summary["article_count"]} articles {article_summary["article_titles"]}  with {article_summary["unique_tags"]} tags with {article_summary["article_reading_time_minutes"]}, {article_summary["article_comments_counts"]}, {article_summary["article_positive_reactions_counts"]}"
         )
 
     # Add the new columns to the DataFrame
     followers_df["article_count"] = article_counts
     followers_df["article_titles"] = article_titles
     followers_df["unique_tags"] = unique_tags
+    followers_df["article_reading_time_minutes"] = article_reading_time_minutes
+    followers_df["article_comments_counts"] = article_comments_counts
+    followers_df["article_positive_reactions_counts"] = (
+        article_positive_reactions_counts
+    )
 
     return followers_df
 
@@ -306,7 +332,7 @@ def update_followers_with_stats(followers_df):
     comments count, and tags followed count by fetching each follower's DEV.to profile.
 
     Args:
-        followers_df (pd.DataFrame): The DataFrame containing follower usernames.
+        followers_df (pd.DataFrame): The DataFrame containing follower usernames and article titles.
 
     Returns:
         pd.DataFrame: The updated DataFrame with new columns for badges, badge descriptions,
@@ -317,11 +343,20 @@ def update_followers_with_stats(followers_df):
     comments_count_list = []
     tags_count_list = []
 
-    for username in followers_df["username"]:
+    for username, article_titles in zip(
+        followers_df["username"], followers_df["article_titles"]
+    ):
         badges, badge_descriptions, comments_count, tags_count = get_user_stats(
             username
         )
-        print(username, badges, badge_descriptions, comments_count, tags_count)
+        print(
+            username,
+            article_titles,
+            badges,
+            badge_descriptions,
+            comments_count,
+            tags_count,
+        )
         badges_list.append(badges)
         badge_descriptions_list.append(badge_descriptions)
         comments_count_list.append(comments_count)
