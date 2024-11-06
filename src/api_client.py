@@ -19,6 +19,7 @@ headers = {"api-key": API_KEY, "Accept": "application/vnd.forem.api-v1+json"}
 def load_articles_to_dataframe() -> pd.DataFrame:
     """
     Loads all articles for authenticated user into a DataFrame.
+    https://developers.forem.com/api/v1#tag/articles/operation/getUserArticles
 
     Returns:
         pd.DataFrame: DataFrame containing article titles and created dates.
@@ -55,6 +56,7 @@ def load_articles_to_dataframe() -> pd.DataFrame:
 def load_followers_to_dataframe() -> pd.DataFrame:
     """
     Loads all followers into a DataFrame.
+    https://developers.forem.com/api/v1#tag/followers/operation/getFollowers
 
     Returns:
         pd.DataFrame: DataFrame containing follower details.
@@ -88,6 +90,7 @@ def load_followers_to_dataframe() -> pd.DataFrame:
 def get_user_details(username: str) -> Dict:
     """
     Fetches user details by username with retry for rate limits.
+    https://developers.forem.com/api/v1#tag/users/operation/getUserMe
 
     Args:
         username: The Dev.to username of the follower.
@@ -109,7 +112,7 @@ def get_user_details(username: str) -> Dict:
                 "summary": data.get("summary"),
                 "location": data.get("location"),
                 "website_url": data.get("website_url"),
-                "joined_at": data.get("joined_at"),
+                "joined_at": data.get("joined_at"),  # when they joined dev.to
                 "profile_image": data.get("profile_image"),
             }
         elif response.status_code == 429:
