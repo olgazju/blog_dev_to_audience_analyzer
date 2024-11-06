@@ -1,4 +1,4 @@
-The Dev.to Audience Analyzer is a Python tool that helps Dev.to authors understand more about their followers. It gives you insights into who your followers are, how active they are, and whether they seem like real, engaged users.
+The **Dev.to Audience Analyzer** is a Python tool that helps Dev.to authors understand more about their followers. It gives you insights into who your followers are, how active they are, and whether they seem like real, engaged users.
 
 ### What This Project Does
 
@@ -28,8 +28,8 @@ Follow these steps to set up your development environment:
 
 1. **Clone the repository**:
 ```bash
-git clone https://github.com/your_username/blog_de_toolkit.git
-cd blog_de_toolkit
+git clone https://github.com/olgazju/blog_dev_to_audience_analyzer.git
+cd blog_dev_to_audience_analyzer
 ```
 
 2. **Create and activate a virtual environment**:
@@ -37,8 +37,8 @@ cd blog_de_toolkit
 ```bash
 brew update && brew upgrade pyenv
 pyenv install 3.12.2
-pyenv virtualenv 3.12.2 de_toolkit
-pyenv local de_toolkit
+pyenv virtualenv 3.12.2 blog_dev_to_audience_analyzer
+pyenv local blog_dev_to_audience_analyzer
 
 ```
 
@@ -79,3 +79,16 @@ Replace `your_devto_api_key` and `your_github_token` with your actual Dev.to API
 2. Run the `analysis.ipynb` notebook to perform the analysis. The notebook will retrieve data from Dev.to using the Forem API and, if available, from GitHub for further analysis on linked profiles.
 
 This project will help you uncover valuable insights about your Dev.to audience, so you can make data-driven decisions about your content and engagement strategy.
+
+### Analysis
+
+This tool provides valuable insights into follower engagement by analyzing activity patterns after each article publication. 
+
+This plot shows the pattern of my new followers gained over time along with the cumulative follower count, marked against the dates of article publications. The teal bars represent the number of new followers on each day, while the orange line tracks the cumulative follower growth. Noticeable spikes in new followers align closely with specific article publication dates, suggesting that certain articles have significantly boosted follower acquisition. This visualization helps in understanding how content impacts audience growth over time, with clear peaks following key publications.
+
+![image](https://github.com/user-attachments/assets/aa87d63b-1c06-47c0-a791-c408cb55d1f3)
+
+The chart below shows the distribution of my new followers by category within 14 days of each article's release.
+
+![image](https://github.com/user-attachments/assets/3d03a2cf-c0d7-451c-960d-ae6902d4c76d)
+
