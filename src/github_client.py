@@ -3,28 +3,26 @@ import requests
 import backoff
 from time import time
 from dotenv import load_dotenv
+from typing import Dict, Optional
+import pandas as pd
 
-
-# Load environment variables from .env file
 load_dotenv(override=True)
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
 
-# Function to fetch GitHub user details with rate limit handling
 @backoff.on_exception(
     backoff.expo, (requests.exceptions.RequestException,), max_tries=5
 )
-def get_github_user(username, token):
+def get_github_user(username: str, token: str) -> Optional[Dict]:
     """
     Fetch GitHub user details using GitHub API, with rate limit handling.
 
-    Parameters:
-    - username (str): GitHub username to retrieve.
-    - token (str): Personal access token for GitHub API authentication.
-    - retries (int): Number of retries for rate-limited requests.
+    Args:
+        username: GitHub username to retrieve
+        token: Personal access token for GitHub API authentication
 
     Returns:
-    - dict: User details if found, otherwise None.
+        Dictionary containing user details if found, None otherwise
     """
     url = f"https://api.github.com/users/{username}"
     headers = {"Authorization": f"token {token}"}
@@ -34,31 +32,40 @@ def get_github_user(username, token):
 
         if response.status_code == 200:
             print(response.json())
-            return response.json()  # Returns user details as a dictionary
+            return response.json()
         elif response.status_code == 404:
             print(f"User {username} not found.")
             return None
         elif response.status_code == 429:
             print("Rate limit exceeded. Waiting before retrying...")
-            time.sleep(60)  # Wait 60 seconds before retrying (adjust as needed)
+            time.sleep(60)
         else:
             print(f"Failed to fetch {username}. Status code: {response.status_code}")
             return None
 
 
-def update_with_github(followers_df):
+def update_with_github(followers_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Updates followers DataFrame with GitHub profile information.
+
+    Fetches GitHub data for followers who have connected GitHub profiles and adds
+    their account creation date, last update date, and public repository count.
+
+    Args:
+        followers_df: DataFrame containing follower information including GitHub usernames
+
+    Returns:
+        pd.DataFrame: Updated DataFrame with additional GitHub profile columns
+    """
     github_users = followers_df[
         (followers_df["category"] == "Connected Profiles")
         & (followers_df["github_username"].notna())
     ].copy()
 
-    # Assuming `github_users` DataFrame has a column `github_username`
-    # Initialize columns for GitHub info
     github_users["github_created_at"] = None
     github_users["github_updated_at"] = None
     github_users["github_public_repos"] = None
 
-    # Iterate over each username and update the DataFrame with GitHub data
     for index, row in github_users.iterrows():
         username = row["github_username"]
         user_data = get_github_user(username, GITHUB_TOKEN)
