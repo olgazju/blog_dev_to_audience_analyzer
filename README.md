@@ -20,7 +20,7 @@ To use this project, you'll need:
 
 - **`analysis.ipynb`**: This Jupyter notebook contains all the code for performing the analysis. You can run this notebook to view visualizations and dive deeper into your follower data.
 - **`src/api_client.py`**: This script handles interactions with the Forem API, allowing the tool to retrieve follower information from Dev.to. The Forem API documentation can be found [here](https://developers.forem.com/api/v1#tag/users/operation/getUserMe).
-- **`src/github_client.py`**: This script handles interactions with the [Github API](https://docs.github.com/en/rest?apiVersion=2022-11-28).
+- **`src/github_client.py`**: This script handles interactions with the [Github API](https://docs.github.com/en/rest?apiVersion=2022-11-28), specifically for analyzing GitHub-linked followers.
 
 ### Development Setup
 
@@ -77,3 +77,5 @@ GITHUB_TOKEN=your_github_token
 Replace `your_devto_api_key` and `your_github_token` with your actual Dev.to API key and GitHub token.
 
 2. Run the `analysis.ipynb` notebook to perform the analysis. The notebook will retrieve data from Dev.to using the Forem API and, if available, from GitHub for further analysis on linked profiles.
+
+This project will help you uncover valuable insights about your Dev.to audience, so you can make data-driven decisions about your content and engagement strategy.
