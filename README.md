@@ -1,5 +1,7 @@
 The **Dev.to Audience Analyzer** is a Python tool that helps Dev.to authors understand more about their followers. It gives you insights into who your followers are, how active they are, and whether they seem like real, engaged users.
 
+This GitHub project was created as part of my blog post [Who's Really Following You on Dev.to? A Guide to Analyzing Your Audience](https://dev.to/olgabraginskaya/whos-really-following-you-on-devto-a-guide-to-analyzing-your-audience-1c0m), where I share insights and tools to analyze the composition and engagement of my followers.
+
 ### What This Project Does
 
 With this tool, you can look at your followers in different ways, including:
