@@ -76,3 +76,5 @@ def update_with_github(followers_df: pd.DataFrame) -> pd.DataFrame:
             github_users.at[index, "github_public_repos"] = user_data.get(
                 "public_repos"
             )
+
+    return github_users
