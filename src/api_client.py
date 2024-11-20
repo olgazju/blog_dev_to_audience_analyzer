@@ -2,7 +2,7 @@ import os
 import requests
 import pandas as pd
 import backoff
-from time import time
+import time
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 import re

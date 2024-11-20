@@ -1,7 +1,7 @@
 import os
 import requests
 import backoff
-from time import time
+import time
 from dotenv import load_dotenv
 from typing import Dict, Optional
 import pandas as pd
