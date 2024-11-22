@@ -29,6 +29,7 @@ To use this project, you'll need:
 Follow these steps to set up your development environment:
 
 1. **Clone the repository**:
+
 ```bash
 git clone https://github.com/olgazju/blog_dev_to_audience_analyzer.git
 cd blog_dev_to_audience_analyzer
@@ -37,18 +38,16 @@ cd blog_dev_to_audience_analyzer
 2. **Create and activate a virtual environment**:
 
 ```bash
-brew update && brew upgrade pyenv
+brew update && brew install pyenv pyenv-virtualenv
 pyenv install 3.12.2
 pyenv virtualenv 3.12.2 blog_dev_to_audience_analyzer
 pyenv local blog_dev_to_audience_analyzer
-
 ```
 
 3.  **Install the required dependencies**:
 
 ```bash
 pip install -r requirements.txt
-
 ```
 
 4. **Install and configure pre-commit hooks**:
@@ -56,7 +55,6 @@ pip install -r requirements.txt
 ```bash
 pip install pre-commit
 pre-commit install
-
 ```
 
 5. **Run pre-commit hooks manually (optional)**:
@@ -65,7 +63,6 @@ pre-commit install
 pre-commit run --all-files
 ```
 
-
 ### Setup
 
 1. Create a `.env` file in the root of the project with the following format:
@@ -73,7 +70,6 @@ pre-commit run --all-files
 ```makefile
 DEV_KEY=your_devto_api_key
 GITHUB_TOKEN=your_github_token
-
 ```
 
 Replace `your_devto_api_key` and `your_github_token` with your actual Dev.to API key and GitHub token.
@@ -84,7 +80,7 @@ This project will help you uncover valuable insights about your Dev.to audience,
 
 ### Analysis
 
-This tool provides valuable insights into follower engagement by analyzing activity patterns after each article publication. 
+This tool provides valuable insights into follower engagement by analyzing activity patterns after each article publication.
 
 This plot shows the pattern of my new followers gained over time along with the cumulative follower count, marked against the dates of article publications. The teal bars represent the number of new followers on each day, while the orange line tracks the cumulative follower growth. Noticeable spikes in new followers align closely with specific article publication dates, suggesting that certain articles have significantly boosted follower acquisition. This visualization helps in understanding how content impacts audience growth over time, with clear peaks following key publications.
 
@@ -93,4 +89,3 @@ This plot shows the pattern of my new followers gained over time along with the 
 The chart below shows the distribution of my new followers by category within 14 days of each article's release.
 
 ![image](https://github.com/user-attachments/assets/3d03a2cf-c0d7-451c-960d-ae6902d4c76d)
-
