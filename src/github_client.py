@@ -3,7 +3,7 @@ import requests
 import backoff
 import time
 from dotenv import load_dotenv
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 import pandas as pd
 
 load_dotenv(override=True)
@@ -13,17 +13,25 @@ GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 @backoff.on_exception(
     backoff.expo, (requests.exceptions.RequestException,), max_tries=5
 )
-def get_github_user(username: str, token: str) -> Optional[Dict]:
+def get_github_user(username: str, token: str) -> Optional[Dict[str, Any]]:
     """
-    Fetch GitHub user details using GitHub API, with rate limit handling.
+    Fetches GitHub user details using the GitHub API with rate limit handling.
+
+    This function retries requests using exponential backoff if an API error occurs.
 
     Args:
-        username: GitHub username to retrieve
-        token: Personal access token for GitHub API authentication
+        username (str): GitHub username to retrieve.
+        token (str): Personal access token for GitHub API authentication.
 
     Returns:
-        Dictionary containing user details if found, None otherwise
+        Optional[Dict[str, Any]]: Dictionary containing GitHub user details if found, including:
+            - 'login' (str): GitHub username.
+            - 'created_at' (str): GitHub account creation date (ISO 8601 format).
+            - 'updated_at' (str): Last profile update date (ISO 8601 format).
+            - 'public_repos' (int): Number of public repositories.
+            Returns None if the user is not found or if the request fails.
     """
+
     url = f"https://api.github.com/users/{username}"
     headers = {"Authorization": f"token {token}"}
 
@@ -44,24 +52,40 @@ def get_github_user(username: str, token: str) -> Optional[Dict]:
             return None
 
 
-def update_with_github(followers_df: pd.DataFrame) -> pd.DataFrame:
+def update_with_github(
+    followers_df: pd.DataFrame, filter_connected_profiles: bool = True
+) -> pd.DataFrame:
     """
-    Updates followers DataFrame with GitHub profile information.
+    Updates the followers DataFrame with GitHub profile information.
 
-    Fetches GitHub data for followers who have connected GitHub profiles and adds
-    their account creation date, last update date, and public repository count.
+    This function fetches GitHub user details for followers who have connected GitHub profiles.
+    It adds account creation date, last update date, and the number of public repositories.
+
+    By default, it only updates users where 'category' is 'Connected Profiles'.
+    If `filter_connected_profiles` is False, it updates all users with a GitHub username.
 
     Args:
-        followers_df: DataFrame containing follower information including GitHub usernames
+        followers_df (pd.DataFrame): DataFrame containing follower information, including GitHub usernames.
+        filter_connected_profiles (bool, optional): If True (default), filters for users in the "Connected Profiles" category.
+                                                    If False, fetches data for all users with GitHub usernames.
 
     Returns:
-        pd.DataFrame: Updated DataFrame with additional GitHub profile columns
+        pd.DataFrame: A new DataFrame with additional GitHub profile columns:
+            - 'github_created_at' (str): GitHub account creation date.
+            - 'github_updated_at' (str): Last GitHub profile update date.
+            - 'github_public_repos' (int): Number of public repositories.
     """
-    github_users = followers_df[
-        (followers_df["category"] == "Connected Profiles")
-        & (followers_df["github_username"].notna())
-    ].copy()
 
+    # Apply filter if enabled
+    if filter_connected_profiles:
+        github_users = followers_df[
+            (followers_df["category"] == "Connected Profiles")
+            & (followers_df["github_username"].notna())
+        ].copy()
+    else:
+        github_users = followers_df[followers_df["github_username"].notna()].copy()
+
+    # Initialize new columns
     github_users["github_created_at"] = None
     github_users["github_updated_at"] = None
     github_users["github_public_repos"] = None

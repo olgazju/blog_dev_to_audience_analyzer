@@ -125,17 +125,23 @@ def get_user_details(username: str) -> Dict:
             return {}
 
 
-def load_extended_followers_to_dataframe() -> pd.DataFrame:
+def load_users_with_details(users_df: pd.DataFrame = None) -> pd.DataFrame:
     """
-    Loads followers with additional profile details.
+    Loads user details (followers or winners) with additional profile information.
+
+    If users_df is None, it loads the follower data first.
+
+    Args:
+        users_df (pd.DataFrame, optional): DataFrame containing usernames. If None, it defaults to followers.
 
     Returns:
-        pd.DataFrame: DataFrame containing extended follower details.
+        pd.DataFrame: DataFrame containing extended user details, including social profiles, location, and Dev.to metadata.
     """
-    followers_df = load_followers_to_dataframe()
+    if users_df is None:
+        users_df = load_followers_to_dataframe()
 
     extended_data = []
-    for _, row in followers_df.iterrows():
+    for _, row in users_df.iterrows():
         username = row["username"]
         user_details = get_user_details(username)
 
@@ -149,13 +155,21 @@ def load_extended_followers_to_dataframe() -> pd.DataFrame:
 @backoff.on_exception(backoff.expo, requests.exceptions.RequestException, max_tries=5)
 def get_user_articles_summary(username: str) -> Dict:
     """
-    Fetches article summary for user.
+    Fetches article metadata for a specific Dev.to user.
 
     Args:
-        username: The Dev.to username of the user.
+        username (str): The Dev.to username of the user.
 
     Returns:
-        dict: Dictionary containing article counts, titles and metadata.
+        Dict[str, Any]: A dictionary containing:
+            - 'article_count' (int): Total number of articles.
+            - 'article_titles' (List[str]): Titles of published articles.
+            - 'unique_tags' (List[str]): Unique tags used across all articles.
+            - 'tags' (List[List[str]]): List of tag lists for each article.
+            - 'article_reading_time_minutes' (List[int]): Reading time for each article.
+            - 'article_comments_counts' (List[int]): Number of comments on each article.
+            - 'article_positive_reactions_counts' (List[int]): Number of positive reactions per article.
+            - 'article_published_at' (List[str]): Publish dates of the articles.
     """
     url = f"{BASE_URL}/articles?username={username}"
     headers = {"api-key": API_KEY, "Accept": "application/vnd.forem.api-v1+json"}
@@ -165,6 +179,8 @@ def get_user_articles_summary(username: str) -> Dict:
     unique_tags: Set[str] = set()
     article_comments_counts = []
     article_positive_reactions_counts = []
+    article_published_at = []
+    tags = []
     page = 1
 
     while True:
@@ -179,8 +195,10 @@ def get_user_articles_summary(username: str) -> Dict:
                 print(article)
                 article_titles.append(article.get("title"))
                 unique_tags.update(article.get("tag_list", []))
+                tags.append(article.get("tag_list", []))
                 article_reading_time_minutes.append(article.get("reading_time_minutes"))
                 article_comments_counts.append(article.get("comments_count"))
+                article_published_at.append(article.get("published_at"))
                 article_positive_reactions_counts.append(
                     article.get("positive_reactions_count")
                 )
@@ -192,32 +210,48 @@ def get_user_articles_summary(username: str) -> Dict:
             print(
                 f"Failed to load articles for {username}: {response.status_code} - {response.text}"
             )
-            return {"article_count": 0, "article_titles": [], "unique_tags": []}
+            return {
+                "article_count": 0,
+                "article_titles": [],
+                "unique_tags": [],
+                "tags": [],
+                "article_reading_time_minutes": [],
+                "article_comments_counts": [],
+                "article_positive_reactions_counts": [],
+                "article_published_at": [],
+            }
 
     return {
         "article_count": len(article_titles),
         "article_titles": article_titles,
         "unique_tags": list(unique_tags),
+        "tags": tags,
         "article_reading_time_minutes": article_reading_time_minutes,
         "article_comments_counts": article_comments_counts,
         "article_positive_reactions_counts": article_positive_reactions_counts,
+        "article_published_at": article_published_at,
     }
 
 
 def update_followers_with_articles(followers_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Updates followers DataFrame with article metrics.
+    Updates the followers DataFrame with article-related metrics.
 
-    This function adds three new columns to the DataFrame:
+    This function adds the following columns to the DataFrame:
     - 'article_count': Total number of articles published by the user.
     - 'article_titles': List of article titles published by the user.
     - 'unique_tags': List of distinct tags used across all articles.
+    - 'tags': List of tags for each article.
+    - 'article_reading_time_minutes': List of reading times for each article.
+    - 'article_comments_counts': List of comment counts for each article.
+    - 'article_positive_reactions_counts': List of positive reactions per article.
+    - 'article_published_at': List of article publish dates.
 
     Args:
-        followers_df: The followers DataFrame.
+        followers_df (pd.DataFrame): The followers DataFrame.
 
     Returns:
-        pd.DataFrame: Updated DataFrame with article information.
+        pd.DataFrame: Updated DataFrame containing article-related information for each follower.
     """
     article_counts = []
     article_titles = []
@@ -225,6 +259,8 @@ def update_followers_with_articles(followers_df: pd.DataFrame) -> pd.DataFrame:
     article_reading_time_minutes = []
     article_comments_counts = []
     article_positive_reactions_counts = []
+    article_published_at = []
+    tags = []
 
     for username in followers_df["username"]:
         article_summary = get_user_articles_summary(username)
@@ -232,6 +268,7 @@ def update_followers_with_articles(followers_df: pd.DataFrame) -> pd.DataFrame:
         article_counts.append(article_summary["article_count"])
         article_titles.append(article_summary["article_titles"])
         unique_tags.append(article_summary["unique_tags"])
+        tags.append(article_summary["tags"])
         article_reading_time_minutes.append(
             article_summary["article_reading_time_minutes"]
         )
@@ -239,7 +276,7 @@ def update_followers_with_articles(followers_df: pd.DataFrame) -> pd.DataFrame:
         article_positive_reactions_counts.append(
             article_summary["article_positive_reactions_counts"]
         )
-
+        article_published_at.append(article_summary["article_published_at"])
         print(
             f"For {username} found {article_summary["article_count"]} articles {article_summary["article_titles"]}  with {article_summary["unique_tags"]} tags with {article_summary["article_reading_time_minutes"]}, {article_summary["article_comments_counts"]}, {article_summary["article_positive_reactions_counts"]}"
         )
@@ -247,11 +284,13 @@ def update_followers_with_articles(followers_df: pd.DataFrame) -> pd.DataFrame:
     followers_df["article_count"] = article_counts
     followers_df["article_titles"] = article_titles
     followers_df["unique_tags"] = unique_tags
+    followers_df["tags"] = tags
     followers_df["article_reading_time_minutes"] = article_reading_time_minutes
     followers_df["article_comments_counts"] = article_comments_counts
     followers_df["article_positive_reactions_counts"] = (
         article_positive_reactions_counts
     )
+    followers_df["article_published_at"] = article_published_at
 
     return followers_df
 
@@ -259,13 +298,17 @@ def update_followers_with_articles(followers_df: pd.DataFrame) -> pd.DataFrame:
 @backoff.on_exception(backoff.expo, requests.exceptions.RequestException, max_tries=5)
 def get_user_stats(username: str) -> Tuple[List[str], List[str], int, int]:
     """
-    Fetches user profile stats.
+    Scrapes user profile statistics from the Dev.to website.
 
     Args:
-        username: The DEV.to username.
+        username (str): The Dev.to username.
 
     Returns:
-        tuple: Lists of badge titles and descriptions, comment count, and tags count.
+        Tuple:
+            - List[str]: Titles of user badges.
+            - List[str]: Descriptions of user badges.
+            - int: Number of comments written by the user.
+            - int: Number of tags followed by the user.
     """
     url = f"https://dev.to/{username}/"
     response = requests.get(url, timeout=10)
@@ -305,13 +348,19 @@ def get_user_stats(username: str) -> Tuple[List[str], List[str], int, int]:
 
 def update_followers_with_stats(followers_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Updates followers DataFrame with profile stats.
+    Updates followers DataFrame with profile statistics.
+
+    This function adds the following columns:
+    - 'badges': List of user badges.
+    - 'badge_descriptions': Descriptions of earned badges.
+    - 'comments_count': Number of comments written by the user.
+    - 'tags_count': Number of tags followed by the user.
 
     Args:
-        followers_df: The DataFrame containing follower usernames and article titles.
+        followers_df (pd.DataFrame): The DataFrame containing follower usernames.
 
     Returns:
-        pd.DataFrame: Updated DataFrame with badges and stats columns.
+        pd.DataFrame: Updated DataFrame with additional statistics.
     """
     badges_list = []
     badge_descriptions_list = []
