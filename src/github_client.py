@@ -88,7 +88,9 @@ def update_with_github(
     # Initialize new columns
     github_users["github_created_at"] = None
     github_users["github_updated_at"] = None
-    github_users["github_public_repos"] = None
+    github_users["followers"] = None
+    github_users["following"] = None
+    github_users["github_location"] = None
 
     for index, row in github_users.iterrows():
         username = row["github_username"]
@@ -100,5 +102,8 @@ def update_with_github(
             github_users.at[index, "github_public_repos"] = user_data.get(
                 "public_repos"
             )
+            github_users.at[index, "followers"] = user_data.get("followers")
+            github_users.at[index, "following"] = user_data.get("following")
+            github_users.at[index, "github_location"] = user_data.get("location")
 
     return github_users
